@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Builder — Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface-2: #1a1a24;
+      --border: #2a2a36;
+      --text: #e4e4eb;
+      --text-muted: #71717a;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+
+    header h1 { font-size: 1.5rem; font-weight: 700; }
+    header .subtitle { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; }
+
+    /* Buttons */
+    button {
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 6px 12px; font-size: 0.78rem; }
+    .btn-danger:hover { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 6px 14px; font-size: 0.78rem; }
+    .btn-ghost { background: transparent; color: var(--primary); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--surface-2); }
+    .btn-warning { background: transparent; color: var(--warning); border: 1px solid var(--warning); padding: 6px 12px; font-size: 0.78rem; }
+    .btn-warning:hover { background: var(--warning); color: #000; }
+    .btn-back { background: transparent; color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 20px; }
+    .btn-back:hover { color: var(--text); border-color: var(--text-muted); }
+
+    /* Inputs */
+    input[type="text"], input[type="search"], select, textarea {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+    input::placeholder, textarea::placeholder { color: var(--text-muted); }
+    textarea { resize: vertical; min-height: 80px; }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.75rem;
+    }
+
+    /* Agent Tiles Grid */
+    .agent-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .agent-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .agent-tile:hover {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary);
+    }
+
+    .agent-tile .tile-name { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+    .agent-tile .tile-desc { color: var(--text-muted); font-size: 0.82rem; margin-bottom: 12px; min-height: 20px; }
+    .agent-tile .tile-meta { display: flex; gap: 12px; font-size: 0.75rem; color: var(--text-muted); }
+    .agent-tile .tile-meta span { display: flex; align-items: center; gap: 4px; }
+
+    .add-tile {
+      background: var(--surface-2);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      color: var(--text-muted);
+      transition: border-color 0.15s, color 0.15s;
+      min-height: 140px;
+    }
+
+    .add-tile:hover { border-color: var(--primary); color: var(--primary); }
+    .add-tile .plus { font-size: 2rem; line-height: 1; }
+    .add-tile .label { font-size: 0.85rem; }
+
+    /* Agent Key Display */
+    .agent-key-box {
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.82rem;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      word-break: break-all;
+    }
+
+    .agent-key-box button { flex-shrink: 0; }
+
+    /* Form grid */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-grid .full-width { grid-column: 1 / -1; }
+
+    .form-group { margin-bottom: 0; }
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Shared row styles */
+    .item-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .item-row:last-child { border-bottom: none; }
+    .item-info { flex: 1; }
+    .item-name { font-weight: 600; font-size: 0.9rem; }
+    .item-sub { color: var(--text-muted); font-size: 0.8rem; margin-top: 2px; }
+    .item-date { color: var(--text-muted); font-size: 0.72rem; margin-top: 2px; }
+    .item-actions { display: flex; gap: 6px; align-items: center; }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge.ready { background: rgba(34,197,94,0.15); color: var(--success); }
+    .badge.pending { background: rgba(113,113,122,0.15); color: var(--text-muted); }
+    .badge.indexing { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .badge.error { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
+    .stat-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+
+    /* KB progress bar */
+    .kb-progress { background: var(--surface-2); border-radius: 4px; height: 6px; margin-top: 6px; overflow: hidden; }
+    .kb-progress-fill { height: 100%; background: var(--warning); border-radius: 4px; transition: width 0.3s; }
+
+    /* KB search */
+    .kb-search-area { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .kb-search-results { margin-top: 10px; }
+    .kb-search-result { background: var(--surface-2); border-radius: 6px; padding: 10px 14px; margin-bottom: 6px; font-size: 0.82rem; line-height: 1.5; }
+    .kb-search-result .distance { color: var(--primary); font-size: 0.72rem; font-weight: 600; }
+    .kb-search-result .chunk-text { color: var(--text-muted); margin-top: 4px; word-break: break-word; }
+
+    .form-row { display: flex; gap: 10px; margin-bottom: 12px; }
+    .input-flex { flex: 1; }
+    .hidden-input { display: none; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      width: 500px;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: var(--text); text-transform: none; letter-spacing: 0; }
+    .modal .form-group { margin-bottom: 14px; }
+    .modal .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 20px; font-size: 0.85rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      opacity: 0; transform: translateY(10px);
+      transition: all 0.25s; z-index: 1000;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); }
+
+    .model-badge {
+      background: rgba(99,102,241,0.12);
+      color: var(--primary);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- AGENT LIST VIEW                                        -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="listView">
+      <header>
+        <div>
+          <h1>Agent Builder</h1>
+          <div class="subtitle">Create and manage AI agents with their own keys, models, and knowledge bases</div>
+        </div>
+      </header>
+
+      <div class="agent-grid" id="agentGrid"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- AGENT DETAIL VIEW                                      -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="detailView" style="display: none;">
+      <button class="btn-back" onclick="showList()">Back to agents</button>
+
+      <header>
+        <div>
+          <h1 id="detailName"></h1>
+          <div class="subtitle" id="detailDesc"></div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-ghost btn-sm" onclick="editAgent()">Edit</button>
+          <button class="btn-danger btn-sm" onclick="deleteCurrentAgent()">Delete</button>
+        </div>
+      </header>
+
+      <!-- Agent Key -->
+      <div class="card">
+        <h2>Agent Key</h2>
+        <div class="agent-key-box">
+          <span id="detailAgentKey"></span>
+          <button class="btn-ghost btn-sm" onclick="copyAgentKey()">Copy</button>
+          <button class="btn-warning btn-sm" onclick="regenKey()">Regenerate</button>
+        </div>
+        <div style="margin-top: 8px; font-size: 0.78rem; color: var(--text-muted);">
+          Pass this key as the <code style="color: var(--primary);">agentKey</code> prop in your AiAssistant component.
+        </div>
+      </div>
+
+      <!-- Config Summary -->
+      <div class="card">
+        <h2>Configuration</h2>
+        <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 0.88rem;">
+          <span style="color: var(--text-muted);">Model</span>
+          <span id="detailModel" class="model-badge" style="justify-self: start;"></span>
+          <span style="color: var(--text-muted);">API Key</span>
+          <span id="detailKeyPreview" style="font-family: monospace; font-size: 0.82rem;"></span>
+        </div>
+        <div id="detailPromptWrap" style="margin-top: 12px;">
+          <div style="color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;">System Prompt</div>
+          <div id="detailPrompt" style="background: var(--surface-2); border-radius: 8px; padding: 10px 14px; font-size: 0.82rem; color: var(--text-muted); white-space: pre-wrap; max-height: 120px; overflow-y: auto;"></div>
+        </div>
+      </div>
+
+      <!-- Knowledge Bases -->
+      <div class="card">
+        <h2>Knowledge Bases</h2>
+        <div class="form-row">
+          <input type="text" class="input-flex" id="kbName" placeholder="Knowledge base name">
+          <input type="text" class="input-flex" id="kbDesc" placeholder="Description (optional)">
+          <button class="btn-primary btn-sm" id="addKbBtn">Create</button>
+        </div>
+        <div id="kbList"></div>
+      </div>
+
+      <!-- Usage Stats -->
+      <div class="card">
+        <h2>Usage (Last 7 Days)</h2>
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card"><div class="stat-value" id="totalRequests">--</div><div class="stat-label">Requests</div></div>
+          <div class="stat-card"><div class="stat-value" id="totalTokens">--</div><div class="stat-label">Total Tokens</div></div>
+          <div class="stat-card"><div class="stat-value" id="totalInput">--</div><div class="stat-label">Input Tokens</div></div>
+          <div class="stat-card"><div class="stat-value" id="totalOutput">--</div><div class="stat-label">Output Tokens</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" class="hidden-input" id="kbFileInput" accept=".csv,.json">
+  <div class="toast" id="toast"></div>
+  <div id="modalContainer"></div>
+
+  <script>
+    const API = window.location.origin;
+    const pollingTimers = {};
+    let currentAgent = null;
+
+    // ─── Utilities ──────────────────────────────────────────
+    function toast(msg, type = 'success') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'toast show ' + type;
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.className = 'toast', 2500);
+    }
+
+    function fmt(n) {
+      if (n === null || n === undefined) return '--';
+      if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+      if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+      return String(n);
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // AGENT LIST
+    // ═══════════════════════════════════════════════════════════
+
+    async function loadAgents() {
+      try {
+        const res = await fetch(`${API}/api/agents`);
+        const agents = await res.json();
+        const grid = document.getElementById('agentGrid');
+
+        let html = agents.map(a => `
+          <div class="agent-tile" onclick="openAgent(${a.id})">
+            <div class="tile-name">${esc(a.name)}</div>
+            <div class="tile-desc">${esc(a.description || '')}</div>
+            <div class="tile-meta">
+              <span class="model-badge">${esc(a.model)}</span>
+              <span>${esc(a.key_preview)}</span>
+            </div>
+          </div>
+        `).join('');
+
+        html += `
+          <div class="add-tile" onclick="showCreateModal()">
+            <div class="plus">+</div>
+            <div class="label">New Agent</div>
+          </div>
+        `;
+
+        grid.innerHTML = html;
+      } catch {
+        document.getElementById('agentGrid').innerHTML = '<div class="empty-state">Failed to load agents</div>';
+      }
+    }
+
+    // ─── Create Agent Modal ─────────────────────────────────
+    function showCreateModal() {
+      const container = document.getElementById('modalContainer');
+      container.innerHTML = `
+        <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+          <div class="modal">
+            <h2>Create New Agent</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Agent Name *</label>
+                <input type="text" id="newAgentName" placeholder="e.g. Sephora Assistant">
+              </div>
+              <div class="form-group">
+                <label>Model</label>
+                <select id="newAgentModel">
+                  <option value="gpt-4o">gpt-4o</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                  <option value="gpt-4.1">gpt-4.1</option>
+                  <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                  <option value="gpt-4.1-nano">gpt-4.1-nano</option>
+                  <option value="o4-mini">o4-mini</option>
+                </select>
+              </div>
+              <div class="form-group full-width">
+                <label>Description</label>
+                <input type="text" id="newAgentDesc" placeholder="What does this agent do?">
+              </div>
+              <div class="form-group full-width">
+                <label>OpenAI API Key *</label>
+                <input type="text" id="newAgentKey" placeholder="sk-..." autocomplete="off" spellcheck="false" style="font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem;">
+              </div>
+              <div class="form-group full-width">
+                <label>System Prompt (optional)</label>
+                <textarea id="newAgentPrompt" placeholder="Additional system instructions for this agent..."></textarea>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+              <button class="btn-primary" onclick="createAgent()">Create Agent</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function closeModal() {
+      document.getElementById('modalContainer').innerHTML = '';
+    }
+
+    async function createAgent() {
+      const name = document.getElementById('newAgentName').value.trim();
+      const apiKey = document.getElementById('newAgentKey').value.trim();
+      const model = document.getElementById('newAgentModel').value;
+      const description = document.getElementById('newAgentDesc').value.trim();
+      const systemPrompt = document.getElementById('newAgentPrompt').value.trim();
+
+      if (!name) return toast('Agent name is required', 'error');
+      if (!apiKey) return toast('API key is required', 'error');
+
+      try {
+        const res = await fetch(`${API}/api/agents`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, apiKey, model, description, systemPrompt }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          return toast(err.error || 'Failed to create agent', 'error');
+        }
+        const agent = await res.json();
+        closeModal();
+        toast('Agent created');
+        loadAgents();
+        openAgent(agent.id);
+      } catch {
+        toast('Network error', 'error');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // AGENT DETAIL
+    // ═══════════════════════════════════════════════════════════
+
+    async function openAgent(id) {
+      try {
+        const res = await fetch(`${API}/api/agents/${id}`);
+        if (!res.ok) return toast('Agent not found', 'error');
+        currentAgent = await res.json();
+        renderDetail();
+        document.getElementById('listView').style.display = 'none';
+        document.getElementById('detailView').style.display = 'block';
+        loadKnowledgeBases();
+        loadUsage();
+      } catch {
+        toast('Failed to load agent', 'error');
+      }
+    }
+
+    function renderDetail() {
+      const a = currentAgent;
+      document.getElementById('detailName').textContent = a.name;
+      document.getElementById('detailDesc').textContent = a.description || '';
+      document.getElementById('detailAgentKey').textContent = a.agent_key;
+      document.getElementById('detailModel').textContent = a.model;
+      document.getElementById('detailKeyPreview').textContent = a.key_preview;
+
+      const promptWrap = document.getElementById('detailPromptWrap');
+      const promptEl = document.getElementById('detailPrompt');
+      if (a.system_prompt) {
+        promptWrap.style.display = 'block';
+        promptEl.textContent = a.system_prompt;
+      } else {
+        promptWrap.style.display = 'none';
+      }
+    }
+
+    function showList() {
+      document.getElementById('listView').style.display = 'block';
+      document.getElementById('detailView').style.display = 'none';
+      currentAgent = null;
+      // Clear polling timers
+      for (const id in pollingTimers) {
+        clearInterval(pollingTimers[id]);
+        delete pollingTimers[id];
+      }
+      loadAgents();
+    }
+
+    function copyAgentKey() {
+      navigator.clipboard.writeText(currentAgent.agent_key);
+      toast('Agent key copied');
+    }
+
+    async function regenKey() {
+      if (!confirm('Regenerate agent key? The old key will stop working immediately.')) return;
+      try {
+        const res = await fetch(`${API}/api/agents/${currentAgent.id}/regenerate-key`, { method: 'POST' });
+        const agent = await res.json();
+        currentAgent = agent;
+        renderDetail();
+        toast('Agent key regenerated');
+      } catch {
+        toast('Failed to regenerate key', 'error');
+      }
+    }
+
+    // ─── Edit Agent Modal ───────────────────────────────────
+    function editAgent() {
+      const a = currentAgent;
+      const container = document.getElementById('modalContainer');
+      container.innerHTML = `
+        <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+          <div class="modal">
+            <h2>Edit Agent</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Agent Name</label>
+                <input type="text" id="editName" value="${esc(a.name)}">
+              </div>
+              <div class="form-group">
+                <label>Model</label>
+                <select id="editModel">
+                  ${['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'o4-mini'].map(m =>
+                    `<option value="${m}" ${a.model === m ? 'selected' : ''}>${m}</option>`
+                  ).join('')}
+                </select>
+              </div>
+              <div class="form-group full-width">
+                <label>Description</label>
+                <input type="text" id="editDesc" value="${esc(a.description || '')}">
+              </div>
+              <div class="form-group full-width">
+                <label>New API Key (leave blank to keep current)</label>
+                <input type="text" id="editApiKey" placeholder="sk-..." autocomplete="off" spellcheck="false" style="font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem;">
+              </div>
+              <div class="form-group full-width">
+                <label>System Prompt</label>
+                <textarea id="editPrompt">${esc(a.system_prompt || '')}</textarea>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+              <button class="btn-primary" onclick="saveAgent()">Save</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function saveAgent() {
+      const body = {
+        name: document.getElementById('editName').value.trim(),
+        description: document.getElementById('editDesc').value.trim(),
+        model: document.getElementById('editModel').value,
+        systemPrompt: document.getElementById('editPrompt').value.trim(),
+      };
+      const newKey = document.getElementById('editApiKey').value.trim();
+      if (newKey) body.apiKey = newKey;
+
+      try {
+        const res = await fetch(`${API}/api/agents/${currentAgent.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          return toast(err.error || 'Failed to update', 'error');
+        }
+        currentAgent = await res.json();
+        renderDetail();
+        closeModal();
+        toast('Agent updated');
+      } catch {
+        toast('Network error', 'error');
+      }
+    }
+
+    async function deleteCurrentAgent() {
+      if (!confirm(`Delete agent "${currentAgent.name}" and all its data?`)) return;
+      await fetch(`${API}/api/agents/${currentAgent.id}`, { method: 'DELETE' });
+      toast('Agent deleted');
+      showList();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // KNOWLEDGE BASES (scoped to current agent)
+    // ═══════════════════════════════════════════════════════════
+
+    let pendingUploadKbId = null;
+
+    async function loadKnowledgeBases() {
+      if (!currentAgent) return;
+      const agentId = currentAgent.id;
+
+      try {
+        const res = await fetch(`${API}/api/agents/${agentId}/knowledge-bases`);
+        const kbs = await res.json();
+        const list = document.getElementById('kbList');
+
+        if (kbs.length === 0) {
+          list.innerHTML = '<div class="empty-state">No knowledge bases yet. Create one to get started.</div>';
+          return;
+        }
+
+        list.innerHTML = kbs.map(kb => {
+          const progress = kb.status === 'indexing' && kb.total_chunks > 0
+            ? Math.round((kb.indexed_chunks / kb.total_chunks) * 100) : 0;
+
+          let statusText = kb.status.charAt(0).toUpperCase() + kb.status.slice(1);
+          if (kb.status === 'indexing') statusText = `Indexing ${kb.indexed_chunks}/${kb.total_chunks}`;
+          else if (kb.status === 'ready') statusText = `Ready (${kb.total_chunks} chunks)`;
+
+          return `
+            <div class="item-row" style="flex-wrap: wrap;">
+              <div class="item-info">
+                <div class="item-name">${esc(kb.name)}</div>
+                ${kb.description ? `<div class="item-sub">${esc(kb.description)}</div>` : ''}
+                ${kb.file_name ? `<div class="item-date">File: ${esc(kb.file_name)}</div>` : ''}
+                ${kb.status === 'error' ? `<div class="item-sub" style="color: var(--danger);">${esc(kb.error_message || 'Unknown error')}</div>` : ''}
+              </div>
+              <span class="badge ${kb.status}">${statusText}</span>
+              <div class="item-actions">
+                ${kb.status !== 'indexing' ? `<button class="btn-warning btn-sm" onclick="triggerUpload(${kb.id})">Upload</button>` : ''}
+                ${kb.status === 'ready' ? `<button class="btn-ghost btn-sm" onclick="toggleSearch(${kb.id})">Search</button>` : ''}
+                <button class="btn-danger btn-sm" onclick="deleteKB(${kb.id}, '${esc(kb.name)}')">Delete</button>
+              </div>
+              ${kb.status === 'indexing' ? `
+                <div style="width: 100%;"><div class="kb-progress"><div class="kb-progress-fill" style="width: ${progress}%"></div></div></div>
+              ` : ''}
+              <div id="kb-search-${kb.id}" class="kb-search-area" style="display: none; width: 100%;">
+                <div class="form-row">
+                  <input type="search" class="input-flex" id="kb-search-input-${kb.id}" placeholder="Search this knowledge base..." onkeydown="if(event.key==='Enter')searchKB(${kb.id})">
+                  <button class="btn-ghost btn-sm" onclick="searchKB(${kb.id})">Search</button>
+                </div>
+                <div id="kb-search-results-${kb.id}" class="kb-search-results"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Polling for indexing KBs
+        for (const kb of kbs) {
+          if (kb.status === 'indexing' && !pollingTimers[kb.id]) {
+            pollingTimers[kb.id] = setInterval(() => pollKBStatus(kb.id), 2000);
+          }
+          if (kb.status !== 'indexing' && pollingTimers[kb.id]) {
+            clearInterval(pollingTimers[kb.id]);
+            delete pollingTimers[kb.id];
+          }
+        }
+      } catch {
+        document.getElementById('kbList').innerHTML = '<div class="empty-state">Failed to load knowledge bases</div>';
+      }
+    }
+
+    async function pollKBStatus(kbId) {
+      if (!currentAgent) return;
+      try {
+        const res = await fetch(`${API}/api/agents/${currentAgent.id}/knowledge-bases/${kbId}`);
+        const kb = await res.json();
+        if (kb.status !== 'indexing') {
+          clearInterval(pollingTimers[kbId]);
+          delete pollingTimers[kbId];
+          if (kb.status === 'ready') toast(`"${kb.name}" indexed successfully`);
+          if (kb.status === 'error') toast(`"${kb.name}" indexing failed`, 'error');
+        }
+        loadKnowledgeBases();
+      } catch { /* ignore */ }
+    }
+
+    document.getElementById('addKbBtn').addEventListener('click', async () => {
+      if (!currentAgent) return;
+      const name = document.getElementById('kbName').value.trim();
+      const description = document.getElementById('kbDesc').value.trim();
+      if (!name) return toast('Enter a name for the knowledge base', 'error');
+
+      try {
+        const res = await fetch(`${API}/api/agents/${currentAgent.id}/knowledge-bases`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          return toast(err.error || 'Failed to create', 'error');
+        }
+        document.getElementById('kbName').value = '';
+        document.getElementById('kbDesc').value = '';
+        toast('Knowledge base created');
+        loadKnowledgeBases();
+      } catch {
+        toast('Network error', 'error');
+      }
+    });
+
+    window.triggerUpload = (kbId) => {
+      pendingUploadKbId = kbId;
+      document.getElementById('kbFileInput').click();
+    };
+
+    document.getElementById('kbFileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file || !pendingUploadKbId || !currentAgent) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch(`${API}/api/agents/${currentAgent.id}/knowledge-bases/${pendingUploadKbId}/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          return toast(err.error || 'Upload failed', 'error');
+        }
+        toast('Upload started — indexing in progress');
+        loadKnowledgeBases();
+      } catch {
+        toast('Upload failed', 'error');
+      } finally {
+        e.target.value = '';
+        pendingUploadKbId = null;
+      }
+    });
+
+    window.deleteKB = async (kbId, name) => {
+      if (!currentAgent) return;
+      if (!confirm(`Delete knowledge base "${name}" and all its data?`)) return;
+      await fetch(`${API}/api/agents/${currentAgent.id}/knowledge-bases/${kbId}`, { method: 'DELETE' });
+      if (pollingTimers[kbId]) {
+        clearInterval(pollingTimers[kbId]);
+        delete pollingTimers[kbId];
+      }
+      toast('Knowledge base deleted');
+      loadKnowledgeBases();
+    };
+
+    window.toggleSearch = (kbId) => {
+      const area = document.getElementById(`kb-search-${kbId}`);
+      const isHidden = area.style.display === 'none';
+      area.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) document.getElementById(`kb-search-input-${kbId}`).focus();
+    };
+
+    window.searchKB = async (kbId) => {
+      if (!currentAgent) return;
+      const input = document.getElementById(`kb-search-input-${kbId}`);
+      const resultsEl = document.getElementById(`kb-search-results-${kbId}`);
+      const query = input.value.trim();
+      if (!query) return;
+
+      resultsEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.82rem; padding: 8px 0;">Searching...</div>';
+
+      try {
+        const res = await fetch(`${API}/api/agents/${currentAgent.id}/knowledge-bases/${kbId}/search?q=${encodeURIComponent(query)}&limit=5`);
+        if (!res.ok) {
+          const err = await res.json();
+          resultsEl.innerHTML = `<div style="color: var(--danger); font-size: 0.82rem; padding: 8px 0;">${esc(err.error || 'Search failed')}</div>`;
+          return;
+        }
+        const results = await res.json();
+
+        if (results.length === 0) {
+          resultsEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.82rem; padding: 8px 0;">No results found</div>';
+          return;
+        }
+
+        resultsEl.innerHTML = results.map(r => `
+          <div class="kb-search-result">
+            <span class="distance">distance: ${r.distance.toFixed(4)}</span>
+            <div class="chunk-text">${esc(r.chunk_text.slice(0, 300))}</div>
+          </div>
+        `).join('');
+      } catch {
+        resultsEl.innerHTML = '<div style="color: var(--danger); font-size: 0.82rem; padding: 8px 0;">Search failed</div>';
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // USAGE
+    // ═══════════════════════════════════════════════════════════
+
+    async function loadUsage() {
+      if (!currentAgent) return;
+      try {
+        const res = await fetch(`${API}/api/agents/${currentAgent.id}/usage?days=7`);
+        const data = await res.json();
+        document.getElementById('totalRequests').textContent = fmt(data.totalRequests);
+
+        const totalIn = data.summary.reduce((s, r) => s + (r.total_input_tokens || 0), 0);
+        const totalOut = data.summary.reduce((s, r) => s + (r.total_output_tokens || 0), 0);
+        document.getElementById('totalTokens').textContent = fmt(totalIn + totalOut);
+        document.getElementById('totalInput').textContent = fmt(totalIn);
+        document.getElementById('totalOutput').textContent = fmt(totalOut);
+      } catch { /* ignore */ }
+    }
+
+    // ─── Init ─────────────────────────────────────────────────
+    loadAgents();
+  </script>
+</body>
+</html>
